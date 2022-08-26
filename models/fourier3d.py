@@ -53,9 +53,9 @@ class FNN3d(nn.Module):
     def forward(self, x):
         '''
         Args:
-            x: (batchsize, x_grid, y_grid, t_grid, 3)
+            x: (batchsize, t_grid, x_grid, y_grid, in_dim=3+fields_in)
         Returns:
-            u: (batchsize, x_grid, y_grid, t_grid, 1)
+            u: (batchsize, t_grid, x_grid, y_grid, out_dim=fields_out)
         '''
         length = len(self.ws)
         batchsize = x.shape[0]
