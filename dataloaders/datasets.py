@@ -7,10 +7,11 @@ import sys
 import glob
 import time
 import h5py
+import sys
 
 
 class Dedalus2DDataset(data.Dataset):
-    def __init__(self, data_path, output_names='output-????', field_names=['magnetic field', 'velocity'], num_train=None, use_train=True):
+    def __init__(self, data_path, output_names='output-????', field_names=['magnetic field', 'velocity'], num_train=None, num_test=None, use_train=True):
         self.data_path = data_path
         self.output_names = output_names
         raw_path = os.path.join(data_path, output_names, '*.h5')
@@ -20,16 +21,15 @@ class Dedalus2DDataset(data.Dataset):
         self.field_names = field_names
         self.use_train = use_train
         # self.return_coord = return_coord
-        if (num_train is None) or (num_train < num_files_raw):
+        if (num_train is None) or (num_train > num_files_raw):
             num_train = num_files_raw
         self.num_train = num_train
-        self.num_test = num_test = num_files_raw - num_train
         self.train_files = self.files_raw[:num_train]
-        if num_test > 0:
-            self.test_files = self.files_raw[num_train:]
-        else:
-            self.test_files = None
-            
+        if (num_test is None) or (num_test > (num_files_raw - num_train) ):
+            num_test = num_files_raw - num_train
+        self.num_test = num_test
+        self.test_end = test_end = num_train + num_test
+        self.test_files = self.files_raw[num_train:test_end]
         if (self.use_train) or (self.test_files is None):
             files = self.train_files
         else:

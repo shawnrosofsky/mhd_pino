@@ -5,20 +5,20 @@ import torch.nn as nn
 
 from functools import partial
 
-
+@torch.jit.script
 def compl_mul1d(a, b):
     # (batch, in_channel, x ), (in_channel, out_channel, x) -> (batch, out_channel, x)
     return torch.einsum("bix,iox->box", a, b)
 
-
+@torch.jit.script
 def compl_mul2d(a, b):
     # (batch, in_channel, x,y,t ), (in_channel, out_channel, x,y,t) -> (batch, out_channel, x,y,t)
     return torch.einsum("bixy,ioxy->boxy", a, b)
 
-
+@torch.jit.script
 def compl_mul3d(a, b):
     return torch.einsum("bixyz,ioxyz->boxyz", a, b)
-
+    
 ################################################################
 # 1d fourier layer
 ################################################################
@@ -31,6 +31,8 @@ class SpectralConv1d(nn.Module):
         """
         1D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
         """
+        default_dtype = torch.get_default_dtype()
+        self.cdtype = torch.view_as_complex(torch.zeros(2, dtype=default_dtype)).dtype
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -38,16 +40,15 @@ class SpectralConv1d(nn.Module):
         self.modes1 = modes1
 
         self.scale = (1 / (in_channels*out_channels))
-        self.weights1 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
-
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, 2))
+        
     def forward(self, x):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[2])
 
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1, device=x.device, dtype=torch.cfloat)
+        out_ft = torch.zeros(batchsize, self.in_channels, x.size(-1)//2 + 1, device=x.device, dtype=x.dtype)
         out_ft[:, :, :self.modes1] = compl_mul1d(x_ft[:, :, :self.modes1], self.weights1)
 
         # Return to physical space
@@ -62,6 +63,10 @@ class SpectralConv1d(nn.Module):
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2):
         super(SpectralConv2d, self).__init__()
+        
+        default_dtype = torch.get_default_dtype()
+        self.cdtype = torch.view_as_complex(torch.zeros(2, dtype=default_dtype)).dtype
+        
         self.in_channels = in_channels
         self.out_channels = out_channels
         # Number of Fourier modes to multiply, at most floor(N/2) + 1
@@ -69,10 +74,8 @@ class SpectralConv2d(nn.Module):
         self.modes2 = modes2
 
         self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(
-            self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=self.cdtype))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=self.cdtype))
 
     def forward(self, x, gridy=None):
         batchsize = x.shape[0]
@@ -83,12 +86,9 @@ class SpectralConv2d(nn.Module):
 
         if gridy is None:
             # Multiply relevant Fourier modes
-            out_ft = torch.zeros(batchsize, self.out_channels, x.size(-2), x.size(-1) // 2 + 1, device=x.device,
-                                 dtype=torch.cfloat)
-            out_ft[:, :, :self.modes1, :self.modes2] = \
-                compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
-            out_ft[:, :, -self.modes1:, :self.modes2] = \
-                compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
+            out_ft = torch.zeros(batchsize, self.out_channels, x.size(-2), x.size(-1) // 2 + 1, device=x.device, dtype=x.dtype)
+            out_ft[:, :, :self.modes1, :self.modes2] = compl_mul2d(x_ft[:, :, :self.modes1, :self.modes2], self.weights1)
+            out_ft[:, :, -self.modes1:, :self.modes2] = compl_mul2d(x_ft[:, :, -self.modes1:, :self.modes2], self.weights2)
 
             # Return to physical space
             x = torch.fft.irfftn(out_ft, s=(x.size(-2), x.size(-1)), dim=[2, 3])
@@ -139,6 +139,10 @@ class SpectralConv2d(nn.Module):
 class SpectralConv3d(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2, modes3):
         super(SpectralConv3d, self).__init__()
+        
+        default_dtype = torch.get_default_dtype()
+        self.cdtype = torch.view_as_complex(torch.zeros(2, dtype=default_dtype)).dtype
+        
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.modes1 = modes1  #Number of Fourier modes to multiply, at most floor(N/2) + 1
@@ -146,25 +150,21 @@ class SpectralConv3d(nn.Module):
         self.modes3 = modes3
 
         self.scale = (1 / (in_channels * out_channels))
-        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights3 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
-        self.weights4 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=torch.cfloat))
+        self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=self.cdtype))
+        self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=self.cdtype))
+        self.weights3 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=self.cdtype))
+        self.weights4 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, self.modes3, dtype=self.cdtype))
 
     def forward(self, x):
         batchsize = x.shape[0]
         # Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[2,3,4])
         # Multiply relevant Fourier modes
-        out_ft = torch.zeros(batchsize, self.out_channels, x.size(2), x.size(3), x.size(4)//2 + 1, device=x.device, dtype=torch.cfloat)
-        out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
-        out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
-        out_ft[:, :, :self.modes1, -self.modes2:, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
-        out_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3] = \
-            compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
+        out_ft = torch.zeros(batchsize, self.out_channels, x.size(2), x.size(3), x.size(4)//2 + 1, device=x.device, dtype=x.dtype)
+        out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
+        out_ft[:, :, -self.modes1:, :self.modes2, :self.modes3] = compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
+        out_ft[:, :, :self.modes1, -self.modes2:, :self.modes3] = compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
+        out_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3] = compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
 
         #Return to physical space
         x = torch.fft.irfftn(out_ft, s=(x.size(2), x.size(3), x.size(4)), dim=[2,3,4])

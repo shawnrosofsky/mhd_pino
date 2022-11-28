@@ -1,0 +1,125 @@
+###################
+## Model options
+model_params:
+  layers: [64, 64, 64, 64, 64]
+  modes1: [8, 8, 8, 8]
+  modes2: [8, 8, 8, 8]
+  modes3: [8, 8, 8, 8]
+  # layers: [64, 64, 64, 64, 64, 64]
+  # modes1: [16, 16, 16, 16]
+  # modes2: [16, 16, 16, 16]
+  # modes3: [16, 16, 16, 16]
+  fc_dim: 128
+  in_dim: 8 # 3 + in_fields
+  out_dim: 5
+  activation: 'gelu'
+  pad_x: 5
+  pad_y: 0
+  pad_z: 0
+
+###################
+## Dataset options
+dataset_params:
+  # data_dir: 'mhd_data/simulation_outputs'
+  data_dir: 'mhd_data/simulation_outputs_mymhd'
+  field_names: ['velocity', 'magnetic field', pressure]
+  output_names: 'output-????'
+  dataset_type: 'mhd'
+  name: 'MHD-0000'
+  num: 465
+  # num_train: 300
+  # num_test: 46
+  num_train: 100
+  num_test: 10
+  sub_x: 1
+  sub_t: 1
+  nin: 4
+  nout: 4
+  fields: ['u', 'v', 'Bx', 'By']
+
+###################
+## Dataloader options
+train_loader_params:
+  batch_size: 1
+  shuffle: True
+  num_workers: 4
+  pin_memory: True
+
+val_loader_params:
+  batch_size: 1
+  shuffle: False
+  num_workers: 4
+  pin_memory: True
+
+test_loader_params:
+  batch_size: 1
+  shuffle: False
+  num_workers: 4
+  pin_memory: True
+
+###################
+## Loss options
+loss_params:
+  nu: 0.0001
+  eta: 0.0001
+  rho0: 1.0
+  
+  data_weight: 1.0 # 2.0
+  ic_weight: 1.0
+  pde_weight: 1.0
+  constraint_weight: 0.01
+  
+  use_data_loss: False
+  use_ic_loss: False
+  use_pde_loss: True
+  use_constraint_loss: False
+  
+  u_weight: 1.0
+  v_weight: 1.0
+  Bx_weight: 1.0
+  By_weight: 1.0
+  
+  Du_weight: 1.0
+  Dv_weight: 1.0
+  DBx_weight: 1.0 #1.0
+  DBy_weight: 1.0 #1.0
+  
+  div_B_weight: 1.0
+  div_vel_weight: 1.0
+  
+  Lx: 1.0
+  Ly: 1.0
+  tend: 1.0
+
+  use_weighted_mean: False
+  
+###################
+## Optimizer options
+optimizer_params:
+  betas: [0.9, 0.999]
+  lr: 0.001
+  milestones: [25, 50, 75, 100, 125, 150]
+  gamma: 0.5
+
+
+###################
+## Train params
+
+train_params:
+  epochs: 150
+  ckpt_freq: 10
+  ckpt_path: 'checkpoints/MHDPressure/MHDPressure_PINO-0000.pt'
+  load_ckpt: 'checkpoints/MHDPressure/MHDPressure_PINO-0000.pt'
+
+###################
+## wandb params
+wandb_params:
+  wandb_dir: 'logs'
+  wandb_project: 'MHDPressure_PINO'
+  wandb_group: 'MHDPressure'
+  wandb_num_plots: 1
+  wandb_plot_types: ['ic', 'pred', 'true', 'error']
+
+test:
+  batchsize: 1
+  ckpt: 'checkpoints/MHDPressure_PINO/MHDPressure_PINO-0000.pt'
