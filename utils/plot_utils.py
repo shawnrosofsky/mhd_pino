@@ -17,6 +17,43 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from IPython.display import HTML, display
 
+def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
+    
+    if font_size is not None:
+        plt.rcParams.update({'font.size': font_size})
+        
+        
+    E_kin_pred = pred_spectra_kin[index_t]
+    E_mag_pred = pred_spectra_mag[index_t]
+    
+    E_kin_true = true_spectra_kin[index_t]
+    E_mag_true = true_spectra_mag[index_t]
+    
+    
+    plt.figure(figsize=(6,5))
+    
+    plt.semilogy(k, E_kin_pred, style_kin_pred, label='$E_{kin}$ Pred')
+    plt.semilogy(k, E_kin_true, style_kin_true, label='$E_{kin}$ True')
+    plt.semilogy(k, E_mag_pred, style_mag_pred, label='$E_{mag}$ Pred')
+    plt.semilogy(k, E_mag_true, style_mag_true, label='$E_{mag}$ True')
+
+    plt.xlabel('k')
+    plt.ylabel('E(k)')
+    plt.axis([xmin, xmax, ymin, ymax] )
+
+    plt.title(f'Spectra {name}')
+    plt.legend()
+    
+    if save_path is not None:
+        if save_suffix is not None:
+            figure_path = f'{save_path}_{name}_{save_suffix}.png'
+        else:
+            figure_path = f'{save_path}_{name}.png'
+        plt.savefig(figure_path, bbox_inches='tight')
+
+    
+    return
+
 
 def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save_path=None, save_suffix=None, font_size=None, shading='auto', cmap='jet'):
     
