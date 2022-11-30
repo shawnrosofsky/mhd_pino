@@ -26,7 +26,7 @@ from utils.adam import Adam
 from torch.optim import AdamW
 from utils.my_random_fields import GRF_Mattern
 from utils.utils import load_checkpoint, load_config, save_checkpoint, update_config, get_nonlinearity
-from utils.plot_utils import plot_predictions_mhd, plot_predictions_mhd_plotly
+from utils.plot_utils import plot_predictions_mhd, plot_predictions_mhd_plotly, plot_spectra_mhd
 from importlib import reload
 import imageio
 import wandb
@@ -355,18 +355,19 @@ class Model_tfno(object):
 
 
     
-    def calc_spectra(self, pred, true, key=0, index_t=-1, nbins=None):
+    def calc_spectra(self, pred, true, key=0, nbins=None):
         device = self.device
-        pred = pred.to(device)
-        true = true.to(device)
         
-        u_pred = pred[..., 0]
-        v_pred = pred[..., 1]
-        A_pred = pred[..., 2]
+        u_pred = pred[key][..., 0].to(device)
+        v_pred = pred[key][..., 1].to(device)
+        A_pred = pred[key][..., 2].to(device)
         
-        u_true = true[..., 0]
-        v_true = true[..., 1]
-        A_true = true[..., 2]
+        u_true = true[key][..., 0].to(device)
+        v_true = true[key][..., 1].to(device)
+        A_true = true[key][..., 2].to(device)
+        
+        
+        
         
         pred_spectra_kin, k = self.calc_kin_spectra(u_pred, v_pred, nbins=nbins)
         true_spectra_kin, _ = self.calc_kin_spectra(u_true, v_true, nbins=nbins)
@@ -464,7 +465,7 @@ class Model_tfno(object):
         
         E2D = Bx_k + By_k
         E2D = torch.abs(E2D)
-        K2D = torch.sqrt(k_x**2 + k_y**2)        
+        K2D = torch.sqrt(k_x**2 + k_y**2)  
         
         if nbins is None:
             nbins = nx
@@ -481,8 +482,18 @@ class Model_tfno(object):
             E[:, i] += E_bin
         return E, k
         
+    def plot_spectra(self, k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
+        plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=index_t, name=name, save_path=save_path, save_suffix=save_suffix, font_size=font_size, style_kin_pred=style_kin_pred, style_kin_true=style_kin_true, style_mag_pred=style_mag_pred, style_mag_true=style_mag_true, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
         
-            
+    def calc_and_plot_spectra(self, pred, true, key=0, index_t=-1, nbins=None, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None, return_spectra=True):
+        
+        pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, k = self.calc_spectra(pred, true, key=key, nbins=nbins)
+        
+        self.plot_spectra(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=index_t, name=name, save_path=save_path, save_suffix=save_suffix, font_size=font_size, style_kin_pred=style_kin_pred, style_kin_true=style_kin_true, style_mag_pred=style_mag_pred, style_mag_true=style_mag_true, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
+        
+        if return_spectra:
+            return pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, k
+        
         
     
     def Du_i(self, u_h, k_i):
