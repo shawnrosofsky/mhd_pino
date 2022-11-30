@@ -30,7 +30,7 @@ def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, tr
     E_mag_true = true_spectra_mag[index_t]
     
     
-    plt.figure(figsize=(6,5))
+    fig = plt.figure(figsize=(6,5))
     
     plt.semilogy(k, E_kin_pred, style_kin_pred, label='$E_{kin}$ Pred')
     plt.semilogy(k, E_kin_true, style_kin_true, label='$E_{kin}$ True')
@@ -41,18 +41,18 @@ def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, tr
     plt.ylabel('E(k)')
     plt.axis([xmin, xmax, ymin, ymax] )
 
-    plt.title(f'Spectra {name}')
+    plt.title(f'Spectra ${name}$')
     plt.legend()
     
     if save_path is not None:
         if save_suffix is not None:
-            figure_path = f'{save_path}_{name}_{save_suffix}.png'
+            figure_path = f'{save_path}_spectra_{save_suffix}.png'
         else:
-            figure_path = f'{save_path}_{name}.png'
+            figure_path = f'{save_path}_spectra.png'
         plt.savefig(figure_path, bbox_inches='tight')
 
     
-    return
+    return fig
 
 
 def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save_path=None, save_suffix=None, font_size=None, shading='auto', cmap='jet'):
