@@ -17,10 +17,13 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from IPython.display import HTML, display
 
-def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
+def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, sci_limits=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
     
     if font_size is not None:
         plt.rcParams.update({'font.size': font_size})
+        
+    if sci_limits is not None:
+        plt.rcParams.update({'axes.formatter.limits': sci_limits})
         
         
     E_kin_pred = pred_spectra_kin[index_t]
@@ -32,17 +35,17 @@ def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, tr
     
     fig = plt.figure(figsize=(6,5))
     
-    plt.semilogy(k, E_kin_pred, style_kin_pred, label='$E_{kin}$ Pred')
-    plt.semilogy(k, E_kin_true, style_kin_true, label='$E_{kin}$ True')
-    plt.semilogy(k, E_mag_pred, style_mag_pred, label='$E_{mag}$ Pred')
-    plt.semilogy(k, E_mag_true, style_mag_true, label='$E_{mag}$ True')
+    plt.loglog(k, E_kin_pred, style_kin_pred, label='$E_{kin}$ Pred')
+    plt.loglog(k, E_kin_true, style_kin_true, label='$E_{kin}$ True')
+    plt.loglog(k, E_mag_pred, style_mag_pred, label='$E_{mag}$ Pred')
+    plt.loglog(k, E_mag_true, style_mag_true, label='$E_{mag}$ True')
 
     plt.xlabel('k')
     plt.ylabel('E(k)')
     plt.axis([xmin, xmax, ymin, ymax] )
 
     plt.title(f'Spectra ${name}$')
-    plt.legend()
+    plt.legend(loc="upper right")
     
     if save_path is not None:
         if save_suffix is not None:
@@ -55,10 +58,13 @@ def plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, tr
     return fig
 
 
-def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save_path=None, save_suffix=None, font_size=None, shading='auto', cmap='jet'):
+def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save_path=None, save_suffix=None, font_size=None, sci_limits=None, shading='auto', cmap='jet'):
     
     if font_size is not None:
         plt.rcParams.update({'font.size': font_size})
+        
+    if sci_limits is not None:
+        plt.rcParams.update({'axes.formatter.limits': sci_limits})
         
     
     
@@ -85,6 +91,7 @@ def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save
     plt.title(f'Intial Condition ${name}_0(x,y)$')
     plt.tight_layout()
     plt.axis('square')
+    plt.axis('off')
 
     plt.subplot(1,4,2)
     plt.pcolormesh(X, Y, u_true, cmap=cmap, shading=shading)
@@ -92,22 +99,23 @@ def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save
     plt.title(f'Exact ${name}(x,y,t={t:.2f})$')
     plt.tight_layout()
     plt.axis('square')
+    plt.axis('off')
 
     plt.subplot(1,4,3)
     plt.pcolormesh(X, Y, u_pred, cmap=cmap, shading=shading)
     plt.colorbar()
     plt.title(f'Predict ${name}(x,y,t={t:.2f})$')
-
     plt.axis('square')
-
     plt.tight_layout()
+    plt.axis('off')
 
     plt.subplot(1,4,4)
     plt.pcolormesh(X, Y, u_pred - u_true, cmap=cmap, shading=shading)
     plt.colorbar()
     plt.title(f'Absolute Error ${name}(x,y,t={t:.2f})$')
-    # plt.tight_layout()
+    plt.tight_layout()
     plt.axis('square')
+    plt.axis('off')
 
     if save_path is not None:
         if save_suffix is not None:
@@ -117,6 +125,117 @@ def plot_predictions_mhd(pred, true, inputs, index=0, index_t=-1, name='u', save
         plt.savefig(figure_path, bbox_inches='tight')
     # plt.show()
     return fig
+
+def generate_movie_2D(preds_y, test_y, test_x, key=0, plot_title='', field=0, val_cbar_index=-1, err_cbar_index=-1, val_clim=None, err_clim=None, font_size=None, movie_dir='', movie_name='movie.gif', frame_basename='movie', frame_ext='jpg', cmap='jet', shading='gouraud', remove_frames=True):
+    frame_files = []
+    
+    if movie_dir:
+        os.makedirs(movie_dir, exist_ok=True)
+    
+    if font_size is not None:
+        plt.rcParams.update({'font.size': font_size})
+    
+    # if len(preds_y.shape) == 4:
+    #     Nsamples, Nt, Nx, Ny = preds_y.shape
+    #     preds_y = preds_y.reshape(Nsamples,Nt,Nx,Ny,1)
+    #     test_y = test_y.reshape(Nsamples,Nt,Nx,Ny,1)
+    # Nsamples, Nt, Nx, Ny, Nfields = preds_y.shape    
+    
+    pred = preds_y[key][..., field]
+    true = test_y[key][..., field]
+    inputs = test_x[key]
+    error = pred - true
+    
+    Nt, Nx, Ny = pred.shape
+
+    t = inputs[:, 0, 0, 0]
+    x = inputs[0, :, 0, 1]
+    y = inputs[0, 0, :, 2]
+    X, Y = torch.meshgrid(x, y, indexing='ij')
+    
+    fig, axs = plt.subplots(1, 3, figsize=(18,5))
+    ax1 = axs[0]
+    ax2 = axs[1]
+    ax3 = axs[2]
+    
+    pcm1 = ax1.pcolormesh(X, Y, true[val_cbar_index], cmap=cmap, label='true', shading=shading)
+    pcm2 = ax2.pcolormesh(X, Y, pred[val_cbar_index], cmap=cmap, label='pred', shading=shading)
+    pcm3 = ax3.pcolormesh(X, Y, error[err_cbar_index], cmap=cmap, label='error', shading=shading)
+    
+    if val_clim is None:
+        val_clim = pcm1.get_clim()
+    if err_clim is None:
+        err_clim = pcm3.get_clim()
+        
+    
+    
+    pcm1.set_clim(val_clim)
+    plt.colorbar(pcm1, ax=ax1)
+    ax1.axis('square')
+    ax1.set_axis_off()
+       
+    
+    pcm2.set_clim(val_clim)
+    plt.colorbar(pcm2, ax=ax2)
+    ax2.axis('square')
+    ax2.set_axis_off()
+    
+    pcm3.set_clim(err_clim)
+    plt.colorbar(pcm3, ax=ax3)
+    ax3.axis('square')
+    ax3.set_axis_off()
+
+    plt.tight_layout()
+    
+    for i in range(Nt):
+        # Exact
+        ax1.clear()
+        pcm1 = ax1.pcolormesh(X, Y, true[i], cmap=cmap, label='true', shading=shading)
+        pcm1.set_clim(val_clim)
+        ax1.set_title(f'Exact {plot_title}: $t={t[i]:.2f}$')
+        ax1.axis('square')
+        ax1.set_axis_off()
+
+
+        # Predictions
+        ax2.clear()
+        pcm2 = ax2.pcolormesh(X, Y, pred[i], cmap=cmap, label='pred', shading=shading)
+        pcm2.set_clim(val_clim)
+        ax2.set_title(f'Predict {plot_title}: $t={t[i]:.2f}$')
+        ax2.axis('square')
+        ax2.set_axis_off()
+        
+        # Error
+        ax3.clear()
+        pcm3 = ax3.pcolormesh(X, Y, error[i], cmap=cmap, label='error', shading=shading)
+        pcm3.set_clim(err_clim)
+        ax3.set_title(f'Error {plot_title}: $t={t[i]:.2f}$')
+        ax3.axis('square')
+        ax3.set_axis_off()
+        
+#         plt.tight_layout()
+        fig.canvas.draw()
+        
+        if movie_dir:
+            frame_path = os.path.join(movie_dir,f'{frame_basename}-{i:03}.{frame_ext}')
+            frame_files.append(frame_path)
+            plt.savefig(frame_path, bbox_inches='tight')
+
+    
+
+    if movie_dir:
+        movie_path = os.path.join(movie_dir, movie_name)
+        with imageio.get_writer(movie_path, mode='I') as writer:
+            for frame in frame_files:
+                image = imageio.imread(frame)
+                writer.append_data(image)
+                
+    if movie_dir and remove_frames:
+        for frame in frame_files:
+            try:
+                os.remove(frame)
+            except:
+                pass
 
     
 def plot_predictions_mhd_plotly(pred, true, inputs, index=0, index_t=-1, name='u', save_path=None, font_size=None, shading='auto', cmap='jet'):

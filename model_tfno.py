@@ -26,7 +26,7 @@ from utils.adam import Adam
 from torch.optim import AdamW
 from utils.my_random_fields import GRF_Mattern
 from utils.utils import load_checkpoint, load_config, save_checkpoint, update_config, get_nonlinearity
-from utils.plot_utils import plot_predictions_mhd, plot_predictions_mhd_plotly, plot_spectra_mhd
+from utils.plot_utils import plot_predictions_mhd, plot_predictions_mhd_plotly, plot_spectra_mhd, generate_movie_2D
 from importlib import reload
 import imageio
 import wandb
@@ -328,11 +328,20 @@ class Model_tfno(object):
         else:
             return preds
     
-    def plot_predictions(self, pred, true, inputs, key=0, index_t=-1, save_path=None, font_size=None, shading='gouraud', cmap='jet'):
+    def plot_predictions(self, pred, true, inputs, key=0, index_t=-1, save_path=None, font_size=None, sci_limits=None, shading='gouraud', cmap='jet'):
         names = self.names
         for index, name in enumerate(names):
-            plot_predictions_mhd(pred[key], true[key], inputs[key], index=index, index_t=index_t, name=name, save_path=save_path, save_suffix=key, font_size=font_size, shading=shading, cmap=cmap)
-            
+            plot_predictions_mhd(pred[key], true[key], inputs[key], index=index, index_t=index_t, name=name, save_path=save_path, save_suffix=key, font_size=font_size, sci_limits=sci_limits, shading=shading, cmap=cmap)
+    
+    def generate_movie_2D(self, pred, true, inputs, key=0, val_cbar_index=-1, err_cbar_index=-1, val_clim=None, err_clim=None, movie_dir='', movie_name='movie.gif', frame_basename='movie', frame_ext='jpg', font_size=None, shading='gouraud', cmap='jet', remove_frames=True):
+        names = self.names
+        movie_basename, movie_ext = os.path.splitext(movie_name)
+        # movie_name = f'{movie_basename}_{key}.{movie_ext}'
+        for index, name in enumerate(names):
+            movie_name = f'{movie_basename}_{name}_{key}{movie_ext}'
+            frame_name = f'{frame_basename}_{name}_{key}'
+            generate_movie_2D(pred, true, inputs, key=key, field=index, plot_title=name, val_cbar_index=val_cbar_index, err_cbar_index=err_cbar_index, val_clim=val_clim, err_clim=err_clim, movie_dir=movie_dir, movie_name=movie_name, frame_basename=frame_name, frame_ext=frame_ext, font_size=font_size, shading=shading, cmap=cmap, remove_frames=remove_frames)
+    
     def to(self, device):
         self.device = device
         self.model = self.model.to(device)
@@ -482,8 +491,8 @@ class Model_tfno(object):
             E[:, i] += E_bin
         return E, k
         
-    def plot_spectra(self, k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
-        plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=index_t, name=name, save_path=save_path, save_suffix=save_suffix, font_size=font_size, style_kin_pred=style_kin_pred, style_kin_true=style_kin_true, style_mag_pred=style_mag_pred, style_mag_true=style_mag_true, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
+    def plot_spectra(self, k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=-1, name='Re100', save_path=None, save_suffix=None, font_size=None, sci_limits=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None):
+        plot_spectra_mhd(k, pred_spectra_kin, true_spectra_kin, pred_spectra_mag, true_spectra_mag, index_t=index_t, name=name, save_path=save_path, save_suffix=save_suffix, font_size=font_size, sci_limits=sci_limits, style_kin_pred=style_kin_pred, style_kin_true=style_kin_true, style_mag_pred=style_mag_pred, style_mag_true=style_mag_true, xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax)
         
     def calc_and_plot_spectra(self, pred, true, key=0, index_t=-1, nbins=None, name='Re100', save_path=None, save_suffix=None, font_size=None, style_kin_pred='b-', style_kin_true='k-', style_mag_pred='b--', style_mag_true='k--', xmin=0, xmax=200, ymin=1e-10, ymax=None, return_spectra=True):
         
