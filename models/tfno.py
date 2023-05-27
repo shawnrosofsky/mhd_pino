@@ -97,7 +97,7 @@ class FactorizedFNO3d(nn.Module):
         nx, ny, nz = x.shape[1], x.shape[2], x.shape[3]
         x = F.pad(x, self.padding, "constant", 0)
         size_x, size_y, size_z = x.shape[1], x.shape[2], x.shape[3]
-        
+        # print(x.shape)
         # x = x.permute(0,2,3,4,1)
         x = self.fc0(x)
         x = x.permute(0,4,1,2,3)

@@ -62,12 +62,18 @@ class Dedalus2DDataset(data.Dataset):
         return dataset
     
     def get_coords(self, index):
+        # print(len(self.files))
+        # print(index)
         file = self.files[index]
         with h5py.File(file, mode='r') as h5file:
             data_file = h5file['tasks']
             keys = list(data_file.keys())
             dims = data_file[keys[0]].dims
+            # t = dims[0]['sim_time'][:]
+            # x = dims[1][0][:]
+            # y = dims[2][0][:]
+            ndims = len(dims)
             t = dims[0]['sim_time'][:]
-            x = dims[1][0][:]
-            y = dims[2][0][:]
+            x = dims[ndims-2][0][:]
+            y = dims[ndims-1][0][:]
         return t, x, y

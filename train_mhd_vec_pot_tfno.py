@@ -8,7 +8,7 @@ import h5py
 from torch.utils.data import DataLoader
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
-from functorch import vmap, grad
+# from functorch import vmap, grad
 from models import FNN3d, FactorizedFNO3d
 import torch.nn.functional as F
 import matplotlib
@@ -57,7 +57,7 @@ def parse_arguments():
 if __name__ == '__main__':
     # Check if GPU is available
     # torch.backends.cudnn.benchmark = False
-    print(torch.backends.cudnn.version())
+    # print(torch.backends.cudnn.version())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # torch.set_default_tensor_type(torch.DoubleTensor)
 
@@ -146,8 +146,8 @@ if __name__ == '__main__':
     
     
     # Construct optimizer and scheduler
-    # optimizer = Adam(model.parameters(), betas=optimizer_params['betas'], lr=optimizer_params['lr'])
-    optimizer = AdamW(model.parameters(), betas=optimizer_params['betas'], lr=optimizer_params['lr'], weight_decay=0.1)
+    optimizer = Adam(model.parameters(), betas=optimizer_params['betas'], lr=optimizer_params['lr'])
+    # optimizer = AdamW(model.parameters(), betas=optimizer_params['betas'], lr=optimizer_params['lr'], weight_decay=0.1)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=optimizer_params['milestones'], gamma=optimizer_params['gamma'])
     
     # Construct Loss class
@@ -219,9 +219,6 @@ if __name__ == '__main__':
             for i, (inputs, outputs) in enumerate(pbar_val):
                 inputs = inputs.type(torch.FloatTensor).to(device)
                 outputs = outputs.type(torch.FloatTensor).to(device)
-                
-                
-                
                 
                 # Compute Predictions
                 pred = model(inputs).reshape(outputs.shape)

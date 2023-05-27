@@ -10,7 +10,7 @@ model_params:
   in_dim: 6 # 3 + in_fields
   out_dim: 3
   activation: 'gelu'
-  pad_x: 5
+  pad_x: 5 # 5
   pad_y: 0
   pad_z: 0
   # input_norm: [1.0, 1.0, 1.0, 0.25, 0.25, 0.0001]
@@ -24,20 +24,18 @@ model_params:
 ## Dataset options
 dataset_params:
   # data_dir: 'mhd_data/simulation_outputs'
-  data_dir: 'mhd_data2/simulation_outputs_Re250_N256'
+  data_dir: 'data2/simulation_outputs_Re100_N256'
   field_names: ['velocity', 'vector potential']
   output_names: 'output-????'
   dataset_type: 'mhd'
-  name: 'MHDVecPot_Re250_N256'
+  name: 'MHDVecPot_Re100_N256'
   num: 1000
   num_train: 950
   num_test: 50
-  # num_train: 100
-  # num_test: 10
   sub_x: 1
-  sub_t: 1 # 2
+  sub_t: 1
   ind_x: null
-  ind_t: null # 51
+  ind_t: null
   nin: 3
   nout: 3
   fields: ['u', 'v', 'A']
@@ -47,26 +45,26 @@ dataset_params:
 train_loader_params:
   batch_size: 1
   shuffle: True
-  num_workers: 32 # 4 # 16
+  num_workers: 32 # 8
   pin_memory: True
 
 val_loader_params:
   batch_size: 1
   shuffle: False
-  num_workers: 32 # 4
+  num_workers: 32 # 8
   pin_memory: True
 
 test_loader_params:
   batch_size: 1
   shuffle: False
-  num_workers: 32 # 16
+  num_workers: 32 # 8
   pin_memory: True
 
 ###################
 ## Loss options
 loss_params:
-  nu: 0.004
-  eta: 0.004
+  nu: 0.01
+  eta: 0.01
   rho0: 1.0
   
   data_weight: 5.0
@@ -92,7 +90,7 @@ loss_params:
   
   Lx: 1.0
   Ly: 1.0
-  tend: 1.0 # 0.51
+  tend: 1.0
 
   use_weighted_mean: False
   
@@ -102,8 +100,8 @@ optimizer_params:
   betas: [0.9, 0.999]
   lr: 5.0e-4 # 0.001
   milestones: [20, 40, 60, 80, 100]
-  # milestones: [25, 50, 75, 100, 125, 150]
   # milestones: [10, 25, 100, 250, 500, 750, 1000]
+  # milestones: [25, 100, 250, 500, 750, 1000]
   gamma: 0.5
 
 
@@ -113,7 +111,7 @@ optimizer_params:
 train_params:
   epochs: 100
   ckpt_freq: 25
-  ckpt_path: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re250_N256_tfno.pt'
+  ckpt_path: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re100_N256_tfno.pt'
   load_ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_tfno.pt'
 
 ###################
@@ -121,11 +119,11 @@ train_params:
 wandb_params:
   wandb_dir: 'logs'
   wandb_project: 'MHD_PINO'
-  wandb_group: 'MHDVecPot_Re250_N256_tfno'
+  wandb_group: 'MHDVecPot_Re100_N256_tfno'
   wandb_num_plots: 1
   wandb_plot_freq: 5
   wandb_plot_types: ['ic', 'pred', 'true', 'error']
 
 test_params:
   # batchsize: 1
-  ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re250_N256_tfno.pt'
+  ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re100_N256_tfno.pt' 

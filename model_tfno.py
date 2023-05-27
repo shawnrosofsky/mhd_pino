@@ -30,6 +30,7 @@ from utils.plot_utils import plot_predictions_mhd, plot_predictions_mhd_plotly, 
 from importlib import reload
 import imageio
 import wandb
+import time
 
 import plotly
 import plotly.express as px
@@ -51,7 +52,6 @@ class Model_tfno(object):
         self.device = device
         # Define parameters
         self.config_file = config_file
-        self.config = config = load_config(config_file)
         self.config = config = load_config(config_file)
         self.model_params = model_params = config['model_params']
         self.dataset_params = dataset_params = config['dataset_params']
@@ -146,15 +146,15 @@ class Model_tfno(object):
         ckpt_freq = train_params['ckpt_freq']
         
         for e in range(epochs):
-            print(f'Epoch: {e}')
+            display(f'Epoch: {e}')
             
             
             # Train Loop
             model.train()
             train_loss = []
             train_loss_dict = {}
-            print('Training:')
-            pbar_train = tqdm.tqdm(dataloader_train, dynamic_ncols=True, smoothing=0.1)
+            display('Training:')
+            pbar_train = tqdm.tqdm(dataloader_train, dynamic_ncols=True, smoothing=0.1, leave=False)
             for i, (inputs, outputs) in enumerate(pbar_train):
                 inputs = inputs.type(torch.FloatTensor).to(device)
                 outputs = outputs.type(torch.FloatTensor).to(device)
@@ -189,7 +189,7 @@ class Model_tfno(object):
             val_loss_dict = {}
             plot_count = 0
             plot_dict = {name: {} for name in names}
-            print('Validation:')
+            display('Validation:')
             pbar_val = tqdm.tqdm(dataloader_val, dynamic_ncols=True, smoothing=0.1)
             with torch.no_grad():
                 for i, (inputs, outputs) in enumerate(pbar_val):
@@ -247,7 +247,7 @@ class Model_tfno(object):
                 ckpt_path_epoch = ckpt_path.replace('.pt', f'_{e:03d}.pt')
                 save_checkpoint(ckpt_path_epoch, model, optimizer)
         
-        print('Finished Training')
+        display('Finished Training')
         
         save_checkpoint(ckpt_path, model, optimizer)
 
@@ -268,9 +268,10 @@ class Model_tfno(object):
         model.eval()
         val_loss = []
         val_loss_dict = {}
-        print('Validation:')
-        pbar_val = tqdm.tqdm(dataloader_val, dynamic_ncols=True, smoothing=0.1)
+        display('Validation:')
+        # time.sleep(0.1)
         with torch.no_grad():
+            pbar_val = tqdm.tqdm(dataloader_val, dynamic_ncols=True, smoothing=0.1)
             for i, (inputs, outputs) in enumerate(pbar_val):
                 inputs = inputs.type(dtype).to(device)
                 outputs = outputs.type(dtype).to(device)

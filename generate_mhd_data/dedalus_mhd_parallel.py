@@ -25,6 +25,8 @@ import os
 import glob
 import h5py
 import numpy as np
+import functools
+from functools import partial
 import matplotlib
 import matplotlib.pyplot as plt
 import argparse
@@ -46,6 +48,7 @@ from my_random_fields import GRF_Mattern
 import torch
 from functorch import vmap
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# display(device)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Description of your program')
@@ -85,8 +88,24 @@ def parse_arguments():
 
     return args
 
-def check_if_complete(sim_outputs):
-    files = sorted(glob.glob(sim_outputs))
+def check_if_complete(sim_outputs, Nt=101):
+    try:
+        files = sorted(glob.glob(sim_outputs))
+        file = files[0]
+        with h5py.File(file, mode='r') as h5file:
+            data_file = h5file['tasks']
+            keys = list(data_file.keys())
+            dims = data_file[keys[0]].dims
+            t = dims[0]['sim_time'][:]
+        if len(t) == Nt:
+            return True
+        else:
+            return False
+    except Exception:
+        return False
+    
+        
+
     
 
 if __name__ == '__main__':
@@ -133,15 +152,29 @@ if __name__ == '__main__':
     A0 = grf_A.sample(Nsamples).cpu().numpy().reshape(Nsamples,Nx,Ny)
     digits = int(math.log10(Nsamples)) + 1
     
-    for i in range(Nsamples):
+    # expected number of time steps
+    Nt = len(np.arange(0, stop_sim_time + Dt, output_dt))
+    indices = list(range(Nsamples))
+    
+    if skip_exists:
+        completed_list = []
+        for j in range(Nsamples):
+            # print('hi')
+            sim_output_dir = os.path.join(output_dir, f'output-{j:0{digits}}')
+            sim_outputs = os.path.join(sim_output_dir, '*.h5')
+            # skip if the next output directory exists and if the output is complete
+            if os.path.exists(sim_output_dir):
+                completed = check_if_complete(sim_outputs, Nt=Nt)
+            else:
+                completed = False
+            completed_list.append(completed)
+        indices = [j for j, completed in enumerate(completed_list) if not completed]
+    print(indices)
+    # for i in range(Nsamples):
+    def run_simulation(i, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny, Re=Re, ReM=ReM, Schmidt=Schmidt, rho0=rho0, dealias=dealias, stop_sim_time=stop_sim_time, timestepper=timestepper, Dt=Dt, max_timestep=max_timestep, output_dt=output_dt, log_iter=log_iter, dtype=dtype, max_writes=max_writes, logger=logger, output_dir=output_dir, use_cfl=use_cfl, L=L, dim=dim, Nsamples=Nsamples, l_u=l_u, l_A=l_A, Nu=Nu, sigma_u=sigma_u, sigma_A=sigma_A, grf_u=grf_u, grf_A=grf_A, u0_pot=u0_pot, A0=A0, digits=digits, Nt=Nt):
         sim_output_dir = os.path.join(output_dir, f'output-{i:0{digits}}')
-        sim_output_dir_next = os.path.join(output_dir, f'output-{(i+1):0{digits}}')
         sim_outputs = os.path.join(sim_output_dir, '*.h5')
-        # skip if the next output directory exits and skip_exists is True because current output may not have finished
-        if skip_exists and (os.path.exists(sim_output_dir_next)):
-            print(f'Skipping {i} because {sim_output_dir} already exists')
-            continue
-        
+        print(f'Running simulation {i:0{digits}} with outputs in {sim_output_dir}', flush=True)
         # Bases
         coords = d3.CartesianCoordinates('x', 'y')
         dist = d3.Distributor(coords, dtype=dtype)
@@ -241,8 +274,7 @@ if __name__ == '__main__':
         # snapshots.add_task(-d3.div(d3.skew(u)), name='vorticity')
 
         # CFL (Don't actually use this.  Use constant timestep instead)
-        CFL = d3.CFL(solver, initial_dt=max_timestep, cadence=10, safety=0.2, threshold=0.1,
-                    max_change=1.5, min_change=0.5, max_dt=max_timestep)
+        CFL = d3.CFL(solver, initial_dt=max_timestep, cadence=10, safety=0.2, threshold=0.1, max_change=1.5, min_change=0.5, max_dt=max_timestep)
         CFL.add_velocity(u)
 
         # Flow properties
@@ -265,10 +297,20 @@ if __name__ == '__main__':
                     max_B = np.sqrt(flow.max('B2'))
                     max_divB = flow.max('divB')
                     logger.info(f'Iteration={solver.iteration}, Time={solver.sim_time:#.3g}, dt={timestep:#.3g}, max(w)={max_w:#.3g}, max(B)={max_B:#.3g}, max(div_B)={max_divB:#.3g}')
+            print(f'Finished simulation {i:0{digits}} with outputs in {sim_output_dir}', flush=True)
         except:
             logger.error('Exception raised, triggering end of main loop.')
             raise
-        finally:
+        # finally:
             # if snapshots.dist.comm_cart.rank == 0:
             #     snapshots.process_virtual_file()
-            solver.log_stats()
+        solver.log_stats()
+    
+    # run_simulations = partial(run_simulation, Lx=Lx, Ly=Ly, Nx=Nx, Ny=Ny, Re=Re, ReM=ReM, Schmidt=Schmidt, rho0=rho0, dealias=dealias, stop_sim_time=stop_sim_time, timestepper=timestepper, Dt=Dt, max_timestep=max_timestep, output_dt=output_dt, log_iter=log_iter, dtype=dtype, max_writes=max_writes, logger=logger, output_dir=output_dir, movie_dir=movie_dir, use_cfl=use_cfl, skip_exists=skip_exists, L=L, dim=dim, Nsamples=Nsamples, l_u=l_u, l_A=l_A, Nu=Nu, sigma_u=sigma_u, sigma_A=sigma_A, grf_u=grf_u, grf_A=grf_A, u0_pot=u0_pot, A0=A0, digits=digits, Nt=Nt)
+    # with mp.Pool(mp.cpu_count()) as pool:
+    with mp.Pool(mp.cpu_count()-1) as pool:
+        # pool.map(run_simulation, indices)
+        pool.map(run_simulation, indices, chunksize=10)
+        # chunksize = math.ceil(len(indices) / len(pool._pool))
+        # pool.map(run_simulation, indices, chunksize=chunksize)
+        # list(pool.imap_unordered(run_simulation, indices))

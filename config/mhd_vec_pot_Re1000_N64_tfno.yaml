@@ -24,11 +24,11 @@ model_params:
 ## Dataset options
 dataset_params:
   # data_dir: 'mhd_data/simulation_outputs'
-  data_dir: 'mhd_data2/simulation_outputs_Re250_N256'
+  data_dir: 'mhd_data2/simulation_outputs_Re1000_N64'
   field_names: ['velocity', 'vector potential']
   output_names: 'output-????'
   dataset_type: 'mhd'
-  name: 'MHDVecPot_Re250_N256'
+  name: 'MHDVecPot_Re1000_N64'
   num: 1000
   num_train: 950
   num_test: 50
@@ -47,13 +47,13 @@ dataset_params:
 train_loader_params:
   batch_size: 1
   shuffle: True
-  num_workers: 32 # 4 # 16
+  num_workers: 32 # 16
   pin_memory: True
 
 val_loader_params:
   batch_size: 1
   shuffle: False
-  num_workers: 32 # 4
+  num_workers: 32 # 16
   pin_memory: True
 
 test_loader_params:
@@ -65,8 +65,8 @@ test_loader_params:
 ###################
 ## Loss options
 loss_params:
-  nu: 0.004
-  eta: 0.004
+  nu: 0.001
+  eta: 0.001
   rho0: 1.0
   
   data_weight: 5.0
@@ -113,7 +113,7 @@ optimizer_params:
 train_params:
   epochs: 100
   ckpt_freq: 25
-  ckpt_path: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re250_N256_tfno.pt'
+  ckpt_path: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re1000_N64_tfno.pt'
   load_ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_tfno.pt'
 
 ###################
@@ -121,11 +121,11 @@ train_params:
 wandb_params:
   wandb_dir: 'logs'
   wandb_project: 'MHD_PINO'
-  wandb_group: 'MHDVecPot_Re250_N256_tfno'
+  wandb_group: 'MHDVecPot_Re1000_N64_tfno'
   wandb_num_plots: 1
   wandb_plot_freq: 5
   wandb_plot_types: ['ic', 'pred', 'true', 'error']
 
 test_params:
   # batchsize: 1
-  ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re250_N256_tfno.pt'
+  ckpt: 'checkpoints/MHDVecPot_tfno/MHDVecPot_PINO_Re1000_N64_tfno.pt'
