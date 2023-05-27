@@ -1,0 +1,35 @@
+# N = 128 Resolution Runs
+'config/mhd_vec_pot_Re100_N128_tfno.yaml',
+'config/mhd_vec_pot_Re250_N128_tfno.yaml',
+'config/mhd_vec_pot_Re500_N128_tfno.yaml',
+'config/mhd_vec_pot_Re750_N128_tfno.yaml',
+'config/mhd_vec_pot_Re1000_N128_tfno.yaml',
+'config/mhd_vec_pot_Re10000_N128_tfno.yaml',
+
+# N = 256 Resolution Runs
+'config/mhd_vec_pot_Re100_N256_tfno.yaml',
+'config/mhd_vec_pot_Re250_N256_tfno.yaml',
+'config/mhd_vec_pot_Re500_N256_tfno.yaml',
+'config/mhd_vec_pot_Re750_N256_tfno.yaml',
+'config/mhd_vec_pot_Re1000_N256_tfno.yaml',
+
+# N = 64 Resolution Runs
+'config/mhd_vec_pot_Re100_N64_tfno.yaml',
+'config/mhd_vec_pot_Re250_N64_tfno.yaml',
+'config/mhd_vec_pot_Re500_N64_tfno.yaml',
+'config/mhd_vec_pot_Re750_N64_tfno.yaml',
+'config/mhd_vec_pot_Re1000_N64_tfno.yaml',
+
+# Re250 PDE Weight Experiments
+'config/mhd_vec_pot_Re250_N128_tfno_pde_weight_0.yaml',
+'config/mhd_vec_pot_Re250_N128_tfno_pde_weight_1.yaml',
+'config/mhd_vec_pot_Re250_N128_tfno_pde_weight_2.yaml',
+'config/mhd_vec_pot_Re250_N128_tfno_pde_weight_5.yaml',
+'config/mhd_vec_pot_Re250_N128_tfno_pde_weight_10.yaml',
+
+# Re500 PDE Weight Experiments
+'config/mhd_vec_pot_Re500_N128_tfno_pde_weight_0.yaml',
+'config/mhd_vec_pot_Re500_N128_tfno_pde_weight_1.yaml',
+'config/mhd_vec_pot_Re500_N128_tfno_pde_weight_2.yaml',
+'config/mhd_vec_pot_Re500_N128_tfno_pde_weight_5.yaml',
+'config/mhd_vec_pot_Re500_N128_tfno_pde_weight_10.yaml',
