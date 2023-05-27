@@ -6,3 +6,11 @@ __pycache__/
 *.out
 figures/*
 *.so
+*.cpython*.pyc
+models/__pycache__/__init__.cpython-38.pyc
+models/__pycache__/basics.cpython-38.pyc
+models/__pycache__/FCN.cpython-38.pyc
+models/__pycache__/fourier1d.cpython-38.pyc
+models/__pycache__/fourier2d.cpython-38.pyc
+models/__pycache__/fourier3d.cpython-38.pyc
+models/__pycache__/lowrank2d.cpython-38.pyc
